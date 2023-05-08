@@ -77,24 +77,32 @@ public class SiteChecker
 
 internal class Program
 {
-    private const string Token = "5567816135:AAHf76dljBR6Mx8D3wUBgnE63MjJKp3a8tU";
+    private const string Token = "1257627758:AAEK4tds-pYt0x6TYbduq4BiDRH5DQxylpU";
     private static HashSet<Schedule>? Schedules { get; set; }
+
     public static void Main()
     {
         Schedules = new HashSet<Schedule>();
         var siteChecker = new SiteChecker();
         while (true)
         {
-            var schedule = siteChecker.Check();
-            if (schedule == null || !Schedules.Add(schedule))
+            try
+            {
+                var schedule = siteChecker.Check();
+                if (schedule == null || !Schedules.Add(schedule))
+                {
+                    Thread.Sleep(new TimeSpan(0, 0, 30));
+                    continue;
+                }
+
+                var client = new TelegramBotClient(Token);
+                var _ = client.SendTextMessageAsync(new ChatId(415191327), "Появилась запись в поликлинику").Result;
+                Thread.Sleep(new TimeSpan(0, 0, 30));
+            }
+            catch
             {
                 Thread.Sleep(new TimeSpan(0, 0, 30));
-                continue;
             }
-            
-            var client = new TelegramBotClient(Token);
-            var _ = client.SendTextMessageAsync(new ChatId(415191327), "Появилась запись в поликлинику").Result;
-            Thread.Sleep(new TimeSpan(0, 0, 30));
         }
     }
 }
