@@ -68,16 +68,36 @@ public class Doctors
     public string birthday { get; set; }
 }
 
-public class Schedule
+public class Schedule : IEquatable<Schedule>
 {
-    public string date { get; set; }
-    public string time_from { get; set; }
-    public string time_to { get; set; }
-    public DocBusyType docBusyType { get; set; }
-    public int count_tickets { get; set; }
-    public string date_short { get; set; }
-    public string day { get; set; }
-    public Formatting formatting { get; set; }
+    public string date { get; }
+    public string time_from { get; }
+    public string time_to { get; }
+    public DocBusyType docBusyType { get; }
+    public int count_tickets { get; }
+    public string date_short { get; }
+    public string day { get; }
+    public Formatting formatting { get; }
+
+    public bool Equals(Schedule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return date == other.date && time_from == other.time_from && time_to == other.time_to && docBusyType.Equals(other.docBusyType) && count_tickets == other.count_tickets && date_short == other.date_short && day == other.day && formatting.Equals(other.formatting);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((Schedule)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(date, time_from, time_to, docBusyType, count_tickets, date_short, day, formatting);
+    }
 }
 
 public class DocBusyType

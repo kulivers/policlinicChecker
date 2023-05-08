@@ -1,7 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-
-using System.Net;
+﻿using System.Net;
 using Newtonsoft.Json;
 using PolyclinicChecker.Model;
 using Telegram.Bot;
@@ -15,10 +12,8 @@ public class SiteChecker
     private string PoliceNumber => @"5058720877001795";
     private DateTime DateTime => new DateTime(1972, 01, 22);
 
-    public bool Check()
+    public Schedule? Check()
     {
-        var authUri = new Uri("https://uslugi.mosreg.ru/zdrav/doctor_appointment/api/personal");
-        var payload = @"sPol=&nPol=5058720877001795&birthday=22.01.1972&auth=1&pol=5058720877001795";
         var clientHandler = new HttpClientHandler() { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate };
         var httpClient = new HttpClient(clientHandler)
         {
@@ -57,20 +52,49 @@ public class SiteChecker
         var content = message.Content.ReadAsStringAsync().Result;
         var result = JsonConvert.DeserializeObject<PoliclinicResponse>(content);
         IEnumerable<Items> myMed = result.items.Where(i => i.lpu_code == "010103");
-        return myMed.Select(m => m.doctors).Any(doctors =>
-            doctors.Where(doctor => doctor.id != "c145d476-c049-4928-99b0-86971825841b8bbc9b32-023c-4a29-8d63-f47d629f3817")
-                .Any(doctor => doctor.schedule.Any(schedule => schedule.count_tickets > 0)));
+        foreach (var doctors in myMed.Select(m => m.doctors))
+        {
+            foreach (Doctors doctor in doctors)
+            {
+                if (doctor.id == "c145d476-c049-4928-99b0-86971825841b8bbc9b32-023c-4a29-8d63-f47d629f3817")
+                {
+                    continue;
+                }
+
+                foreach (Schedule schedule in doctor.schedule)
+                {
+                    if (schedule.count_tickets > 0)
+                    {
+                        return schedule;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }
 
 internal class Program
 {
-    public static void Main(string[] args)
+    private const string Token = "5567816135:AAHf76dljBR6Mx8D3wUBgnE63MjJKp3a8tU";
+    private static HashSet<Schedule>? Schedules { get; set; }
+    public static void Main()
     {
-        // var siteChecker = new SiteChecker();
-        // siteChecker.Check();
-        var token = "5567816135:AAHf76dljBR6Mx8D3wUBgnE63MjJKp3a8tU";
-        var client = new TelegramBotClient(token);
-        var task = client.SendTextMessageAsync(new ChatId(415191327), "asdsadasd").Result;
+        Schedules = new HashSet<Schedule>();
+        var siteChecker = new SiteChecker();
+        while (true)
+        {
+            var schedule = siteChecker.Check();
+            if (schedule == null || !Schedules.Add(schedule))
+            {
+                Thread.Sleep(new TimeSpan(0, 0, 30));
+                continue;
+            }
+            
+            var client = new TelegramBotClient(Token);
+            var _ = client.SendTextMessageAsync(new ChatId(415191327), "Появилась запись в поликлинику").Result;
+            Thread.Sleep(new TimeSpan(0, 0, 30));
+        }
     }
 }
