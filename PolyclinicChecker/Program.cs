@@ -77,6 +77,7 @@ public class SiteChecker
 
 internal class Program
 {
+    private static readonly TimeSpan TimeOut = new(0, 0, 1);
     private const string Token = "1257627758:AAEK4tds-pYt0x6TYbduq4BiDRH5DQxylpU";
     private static HashSet<Schedule>? Schedules { get; set; }
 
@@ -86,22 +87,24 @@ internal class Program
         var siteChecker = new SiteChecker();
         while (true)
         {
+            Console.WriteLine("try...");
             try
             {
                 var schedule = siteChecker.Check();
                 if (schedule == null || !Schedules.Add(schedule))
                 {
-                    Thread.Sleep(new TimeSpan(0, 0, 30));
+                    Thread.Sleep(TimeOut);
+                    Console.WriteLine("nope(");
                     continue;
                 }
 
                 var client = new TelegramBotClient(Token);
                 var _ = client.SendTextMessageAsync(new ChatId(415191327), "Появилась запись в поликлинику").Result;
-                Thread.Sleep(new TimeSpan(0, 0, 30));
+                Thread.Sleep(TimeOut);
             }
             catch
             {
-                Thread.Sleep(new TimeSpan(0, 0, 30));
+                Thread.Sleep(TimeOut);
             }
         }
     }
